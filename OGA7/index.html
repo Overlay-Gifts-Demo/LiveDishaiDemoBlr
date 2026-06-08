@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>JEWELS-AI | Live Drive AR</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Montserrat:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E8C97A;
+      --gold-dim: rgba(201, 168, 76, 0.18);
+      --obsidian: #050505;
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Montserrat', sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body { margin: 0; background: transparent; overflow: hidden; font-family: var(--font-body); }
+
+    #blackCurtain {
+      position: fixed; inset: 0;
+      background: var(--obsidian);
+      z-index: 99999;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center; gap: 32px;
+      transition: opacity 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .curtain-emblem { width: 64px; height: 64px; }
+    .curtain-emblem svg { width: 100%; height: 100%; animation: spin 10s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .curtain-wordmark { font-family: var(--font-display); font-weight: 300; font-size: 26px; letter-spacing: 0.48em; color: var(--gold); text-transform: uppercase; }
+    .curtain-tagline { font-family: var(--font-body); font-size: 9px; font-weight: 400; letter-spacing: 0.38em; color: rgba(201,168,76,0.4); text-transform: uppercase; margin-top: -20px; }
+    .loader-track { width: 100px; height: 1px; background: rgba(201,168,76,0.12); position: relative; overflow: hidden; }
+    .loader-fill { position: absolute; top:0; left:-100%; width:100%; height:100%; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: sweep 1.7s ease-in-out infinite; }
+    @keyframes sweep { 0%{left:-100%} 100%{left:100%} }
+
+    #cornerMark { position: fixed; top: 20px; left: 20px; z-index: 1000; pointer-events: none; opacity: 0; transition: opacity 0.8s ease 0.4s; }
+    #cornerMark.visible { opacity: 1; }
+    .corner-name { display: block; font-family: var(--font-display); font-weight: 300; font-size: 14px; letter-spacing: 0.38em; color: var(--gold); text-transform: uppercase; }
+    .corner-sub  { display: block; font-family: var(--font-body); font-size: 8px; font-weight: 400; letter-spacing: 0.3em; color: rgba(201,168,76,0.38); text-transform: uppercase; margin-top: 3px; }
+
+    #scanHint { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); z-index: 90; text-align: center; pointer-events: none; opacity: 0; transition: opacity 0.6s ease; display: flex; flex-direction: column; align-items: center; gap: 18px; background: transparent; }
+    #scanHint.visible { opacity: 1; }
+    .scan-frame { width: 150px; height: 150px; position: relative; }
+    .sf-corner { position: absolute; width: 28px; height: 28px; border-color: var(--gold); border-style: solid; opacity: 0.65; }
+    .sf-tl { top:0; left:0;  border-width: 1px 0 0 1px; }
+    .sf-tr { top:0; right:0; border-width: 1px 1px 0 0; }
+    .sf-bl { bottom:0; left:0;  border-width: 0 0 1px 1px; }
+    .sf-br { bottom:0; right:0; border-width: 0 1px 1px 0; }
+    .scan-line { position: absolute; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: scanmove 2.2s ease-in-out infinite; }
+    @keyframes scanmove { 0%{top:8%;opacity:0} 10%{opacity:1} 90%{opacity:1} 100%{top:92%;opacity:0} }
+    .scan-text { font-family: var(--font-body); font-size: 9px; font-weight: 400; letter-spacing: 0.35em; color: rgba(201,168,76,0.5); text-transform: uppercase; }
+
+    .button-panel { position: fixed; bottom: 0; left: 0; right: 0; display: none; z-index: 100; padding-bottom: max(30px, env(safe-area-inset-bottom)); pointer-events: none; }
+    .button-inner { display: flex; justify-content: center; }
+    .button-glass { background: rgba(8,8,8,0.75); backdrop-filter: blur(24px) saturate(1.3); -webkit-backdrop-filter: blur(24px) saturate(1.3); border: 1px solid rgba(201,168,76,0.2); border-radius: 999px; padding: 6px 6px 6px 22px; display: flex; align-items: center; gap: 16px; pointer-events: all; box-shadow: 0 0 0 1px rgba(0,0,0,0.5), 0 10px 40px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03); animation: panelRise 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+    @keyframes panelRise { from{opacity:0;transform:translateY(22px)} to{opacity:1;transform:translateY(0)} }
+    .panel-label { font-family: var(--font-body); font-size: 10px; font-weight: 400; letter-spacing: 0.28em; color: rgba(201,168,76,0.55); text-transform: uppercase; white-space: nowrap; }
+    .plan-button { appearance: none; border: none; cursor: pointer; width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(145deg, var(--gold-light), #B8923C); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 14px rgba(201,168,76,0.45), inset 0 1px 0 rgba(255,255,255,0.28); transition: transform 0.15s ease, box-shadow 0.15s ease; flex-shrink: 0; position: relative; }
+    .plan-button::before { content:''; position:absolute; inset:0; border-radius:50%; background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.22), transparent 58%); }
+    .plan-button:active  { transform: scale(0.92); box-shadow: 0 1px 6px rgba(201,168,76,0.25); }
+    .btn-icon { position: relative; z-index:1; width:15px; height:15px; fill: #0a0a0a; }
+
+    #instagramButton { position: fixed; bottom: max(28px, env(safe-area-inset-bottom)); right: 20px; width: 46px; height: 46px; z-index: 100000; cursor: pointer; background: rgba(8,8,8,0.75); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border: 1px solid rgba(201,168,76,0.2); border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 20px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.03); transition: transform 0.2s ease, border-color 0.2s ease; text-decoration: none; }
+    #instagramButton img { width: 25px; height: 25px; border-radius: 5px; }
+    #instagramButton:hover  { transform: scale(1.08); border-color: rgba(201,168,76,0.5); }
+    #instagramButton:active { transform: scale(0.94); }
+
+    a-scene, .a-canvas { background-color: transparent !important; }
+    [class^="mindar-ui"],[id^="mindar-ui"],.mindar-ui-overlay { display:none !important; visibility:hidden !important; opacity:0 !important; }
+    body.ar-active { background: transparent !important; }
+  </style>
+</head>
+<body>
+
+<!-- CURTAIN -->
+<div id="blackCurtain">
+  <div class="curtain-emblem">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="32,3 61,19.5 61,44.5 32,61 3,44.5 3,19.5" stroke="#C9A84C" stroke-width="0.7" fill="none" opacity="0.35"/>
+      <polygon points="32,11 53,23 53,41 32,53 11,41 11,23" stroke="#C9A84C" stroke-width="0.8" fill="none" opacity="0.55"/>
+      <polygon points="32,19 45,26.5 45,37.5 32,45 19,37.5 19,26.5" stroke="#C9A84C" stroke-width="1.1" fill="rgba(201,168,76,0.06)"/>
+      <circle cx="32" cy="32" r="2.8" fill="#C9A84C" opacity="0.85"/>
+    </svg>
+  </div>
+  <div>
+    <div class="curtain-wordmark">Jewels · AI</div>
+    <div class="curtain-tagline">Augmented Reality Engine</div>
+  </div>
+  <div class="loader-track"><div class="loader-fill"></div></div>
+</div>
+
+<!-- CORNER BRANDING -->
+<div id="cornerMark">
+  <span class="corner-name">Jewels · AI</span>
+  <span class="corner-sub">AR Experience</span>
+</div>
+
+<!-- SCAN HINT -->
+<div id="scanHint">
+  <div class="scan-frame">
+    <div class="sf-corner sf-tl"></div>
+    <div class="sf-corner sf-tr"></div>
+    <div class="sf-corner sf-bl"></div>
+    <div class="sf-corner sf-br"></div>
+    <div class="scan-line"></div>
+  </div>
+  <span class="scan-text">Point camera at target</span>
+</div>
+
+<!-- INSTAGRAM -->
+<a href="https://www.instagram.com/overlay_gifts_ai/" target="_blank" id="instagramButton">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png" alt="Instagram">
+</a>
+
+<!-- BUTTON PANEL -->
+<div class="button-panel" id="planButtons">
+  <div class="button-inner">
+    <div class="button-glass">
+      <span class="panel-label" id="panelLabel">Ready to play</span>
+      <button class="plan-button" id="toggleButton" aria-label="Play video">
+        <svg class="btn-icon" id="iconPlay"  viewBox="0 0 16 16"><path d="M4 2.5l10 5.5-10 5.5V2.5z"/></svg>
+        <svg class="btn-icon" id="iconPause" viewBox="0 0 16 16" style="display:none"><rect x="2" y="2" width="4.5" height="12" rx="1"/><rect x="9.5" y="2" width="4.5" height="12" rx="1"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AR SCENE — SPEED OPTIMISED -->
+<a-scene
+  mindar-image="imageTargetSrc: ./targets.mind;
+                uiLoading: no;
+                uiError: no;
+                filterMinCF: 0.001;
+                filterBeta: 1000;
+                missTolerance: 0;
+                warmupTolerance: 0"
+  vr-mode-ui="enabled: false"
+  device-orientation-permission-ui="enabled: false"
+  renderer="antialias: true;
+            alpha: true;
+            physicallyCorrectLights: false;
+            highRefreshRate: true;
+            maxCanvasWidth: 1920;
+            maxCanvasHeight: 1080">
+
+  <a-assets>
+    <video id="driveVideo" playsinline preload="metadata" loop></video>
+  </a-assets>
+
+  <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+  <a-entity id="target1" mindar-image-target="targetIndex: 0">
+    <a-plane
+      id="videoPlane"
+      width="1"
+      height="0.562"
+      visible="false"
+      material="src: #driveVideo; side: double; transparent: true; repeat: 1 1; offset: 0 0">
+    </a-plane>
+  </a-entity>
+</a-scene>
+
+<script>
+  const API_KEY   = "AIzaSyCbnQPV-ZMsmYb5Uy9gid8FvTY3GWmOk0Y";
+  const FOLDER_ID = "11Ycfb9CDuqrFAEQQEkQBkX0QmXhqAmeI";
+
+  AFRAME.registerShader('chromakey', {
+    schema: {
+      src:        { type: 'map' },
+      color:      { type: 'color', default: '#00FF00' },
+      threshold:  { type: 'number', default: 0.3 },
+      smoothness: { type: 'number', default: 0.05 }
+    },
+    init: function(data) {
+      const vt = new THREE.VideoTexture(data.src);
+      vt.minFilter = THREE.LinearFilter;
+      vt.magFilter = THREE.LinearFilter;
+      vt.generateMipmaps = false;
+      vt.format = THREE.RGBAFormat;
+      this.material = new THREE.ShaderMaterial({
+        uniforms: {
+          tex:        { value: vt },
+          keyColor:   { value: new THREE.Color(data.color) },
+          similarity: { value: data.threshold },
+          smoothness: { value: data.smoothness }
+        },
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+        fragmentShader: `
+          uniform sampler2D tex;
+          uniform vec3 keyColor;
+          uniform float similarity, smoothness;
+          varying vec2 vUv;
+          void main(){
+            vec4 c = texture2D(tex, vUv);
+            float d = distance(c.rgb, keyColor);
+            float a = smoothstep(similarity, similarity + smoothness, d);
+            if(a < 0.1) discard;
+            gl_FragColor = vec4(c.rgb, a);
+          }
+        `,
+        transparent: true
+      });
+    },
+    update: function(data) {
+      this.material.uniforms.similarity.value = data.threshold;
+      this.material.uniforms.smoothness.value = data.smoothness;
+      this.material.uniforms.keyColor.value   = new THREE.Color(data.color);
+    }
+  });
+
+  async function getLatestVideo() {
+    const url = `https://www.googleapis.com/drive/v3/files`
+      + `?q='${FOLDER_ID}'+in+parents+and+mimeType+contains+'video/'`
+      + `&orderBy=modifiedTime+desc`
+      + `&pageSize=1`
+      + `&fields=files(id)`
+      + `&key=${API_KEY}`;
+    try {
+      const r = await fetch(url);
+      const d = await r.json();
+      if (d.files && d.files.length > 0) return d.files[0].id;
+    } catch(e) { console.error("Fetch error:", e); }
+    return null;
+  }
+
+  window.addEventListener("load", () => {
+    const videoEl    = document.querySelector("#driveVideo");
+    const videoPlane = document.querySelector("#videoPlane");
+    const target     = document.querySelector("#target1");
+    const toggleBtn  = document.querySelector("#toggleButton");
+    const panel      = document.querySelector("#planButtons");
+    const curtain    = document.querySelector("#blackCurtain");
+    const sceneEl    = document.querySelector('a-scene');
+    const cornerMark = document.querySelector("#cornerMark");
+    const scanHint   = document.querySelector("#scanHint");
+    const panelLabel = document.querySelector("#panelLabel");
+    const iconPlay   = document.querySelector("#iconPlay");
+    const iconPause  = document.querySelector("#iconPause");
+
+    let isPlaying = false;
+
+    const uiKiller = setInterval(() => {
+      document.querySelectorAll('[class^="mindar-ui"],[id^="mindar-ui"]').forEach(e => e.remove());
+    }, 100);
+
+    sceneEl.addEventListener("arReady", () => {
+      curtain.style.opacity = "0";
+      setTimeout(() => {
+        curtain.style.display = "none";
+        clearInterval(uiKiller);
+        document.body.classList.add("ar-active");
+      }, 800);
+      cornerMark.classList.add("visible");
+      scanHint.classList.add("visible");
+    });
+
+    videoEl.addEventListener('playing', () => {
+      videoPlane.setAttribute('visible', 'true');
+    });
+
+    target.addEventListener("targetFound", async () => {
+      scanHint.classList.remove("visible");
+      panel.style.display = "block";
+      const fileId = await getLatestVideo();
+      if (fileId) {
+        const src = `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${API_KEY}`;
+        if (videoEl.src !== src) {
+          videoEl.src = src;
+          videoEl.load();
+        }
+      }
+    });
+
+    target.addEventListener("targetLost", () => {
+      panel.style.display = "none";
+      videoEl.pause();
+      videoPlane.setAttribute('visible', 'false');
+      isPlaying = false;
+      scanHint.classList.add("visible");
+      setState(false);
+    });
+
+    function setState(playing) {
+      iconPlay.style.display  = playing ? 'none'  : 'block';
+      iconPause.style.display = playing ? 'block' : 'none';
+      panelLabel.textContent  = playing ? 'Now playing' : 'Ready to play';
+    }
+
+    toggleBtn.addEventListener("click", async () => {
+      try {
+        if (!isPlaying) {
+          videoEl.muted = false;
+          await videoEl.play();
+          isPlaying = true;
+          setState(true);
+        } else {
+          videoEl.pause();
+          isPlaying = false;
+          setState(false);
+        }
+      } catch(err) { console.error("Playback error:", err); }
+    });
+  });
+
+  document.addEventListener("contextmenu", e => e.preventDefault());
+</script>
+</body>
+</html>
