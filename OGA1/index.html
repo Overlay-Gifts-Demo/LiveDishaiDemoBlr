@@ -483,11 +483,9 @@
     }
     #swipeFlash.flash { animation: flashFade 0.35s ease-out forwards; }
 
-   
     /* ── iOS safe area ── */
     @supports (padding-bottom: env(safe-area-inset-bottom)) {
       #dishCarousel { bottom: calc(20px + env(safe-area-inset-bottom)); }
-      #tableBtn     { bottom: calc(108px + env(safe-area-inset-bottom)); }
     }
 
     @media (max-width: 390px) {
@@ -498,9 +496,7 @@
 
     /* ── Landscape warning ── */
     @media (orientation: landscape) and (max-height: 500px) {
-      #landscapeWarn {
-        display: flex !important;
-      }
+      #landscapeWarn { display: flex !important; }
     }
     #landscapeWarn {
       display: none;
@@ -520,13 +516,11 @@
 </head>
 <body>
 
-  <!-- ── LANDSCAPE WARNING ── -->
   <div id="landscapeWarn">
     <span>📱</span>
     <p>Please rotate your device to portrait mode</p>
   </div>
 
-  <!-- ── START SCREEN ── -->
   <div id="startScreen">
     <div class="start-inner">
       <img class="start-logo" src="logo1.png" onerror="this.style.display='none'" alt="Logo">
@@ -549,7 +543,6 @@
     </div>
   </div>
 
-  <!-- ── LOADING ── -->
   <div id="loadingOverlay">
     <div class="loading-ring">
       <svg viewBox="0 0 56 56" width="56" height="56" fill="none">
@@ -561,13 +554,11 @@
     <p id="loadingStatus">Starting camera</p>
   </div>
 
-  <!-- ── MINI MODEL LOADER ── -->
   <div id="modelLoader">
     <div class="mini-spin"></div>
     <span>Loading dish</span>
   </div>
 
-  <!-- ── ERROR ── -->
   <div id="errorOverlay">
     <div class="err-icon-wrap">📵</div>
     <h2>Camera Access Denied</h2>
@@ -579,7 +570,6 @@
     <button id="retryBtn">Retry</button>
   </div>
 
-  <!-- ── IN-AR CHROME ── -->
   <img src="logo1.png" id="logo" alt="Logo">
 
   <div id="dishLabel">
@@ -587,10 +577,8 @@
     <span id="dishLabelText">Agedashi Tofu</span>
   </div>
 
-  <!-- ── DISH COUNTER DOTS ── -->
   <div id="dishCounter"></div>
 
-  <!-- ── SWIPE HINT ── -->
   <div id="swipeHint">
     <div class="swipe-arrow">
       <div class="swipe-arrow-icon">
@@ -606,34 +594,10 @@
     </div>
   </div>
 
-  <!-- ── SWIPE FLASH ── -->
   <div id="swipeFlash"></div>
 
-  <!-- ── SWIPE ZONE ── -->
   <div id="swipeZone"></div>
 
-  <!-- ── SEE ON TABLE BUTTON ── -->
-  <button id="tableBtn" aria-label="See on table">
-    <svg viewBox="0 0 24 24">
-      <path d="M3 17 Q12 13 21 17"/>
-      <line x1="8"  y1="17" x2="7"  y2="21"/>
-      <line x1="16" y1="17" x2="17" y2="21"/>
-      <path d="M8 10 Q12 7 16 10"/>
-      <ellipse cx="12" cy="10.5" rx="4" ry="1.5"/>
-    </svg>
-    <span id="tableBtnText">See on Table</span>
-  </button>
-
-  <!-- ── TABLE BADGE ── -->
-  <div id="tableBadge">
-    <div class="badge-pulse"></div>
-    <span>Table View</span>
-  </div>
-
-  <!-- ── TABLE SHADOW ── -->
-  <div id="tableShadow"></div>
-
-  <!-- ── SCAN HINT ── -->
   <div id="scanHint">
     <div class="scan-frame">
       <div class="scan-line"></div>
@@ -643,14 +607,8 @@
     <p>Point at menu card</p>
   </div>
 
-  <!-- ── CAROUSEL ── -->
   <div id="dishCarousel"></div>
 
-  <!--
-    FIX 1: a-scene is NO LONGER display:none.
-    Using visibility:hidden + opacity:0 keeps the WebGL context alive on iOS Safari.
-    display:none destroys the context before MindAR can initialise.
-  -->
   <a-scene
     id="arScene"
     mindar-image="imageTargetSrc: ./targets/card.mind;
@@ -677,22 +635,13 @@
       <a-asset-item id="preload0" src="3d-model/KaramisoRamen/KaramisoRamen.glb"></a-asset-item>
     </a-assets>
 
-    <a-light type="ambient"     color="#ffffff" intensity="1.8"></a-light>
+    <a-light type="ambient"      color="#ffffff" intensity="1.8"></a-light>
     <a-light type="directional" color="#ffffff" intensity="1.6"  position="1 3 2"></a-light>
     <a-light type="directional" color="#ffe9c0" intensity="1.0"  position="-2 2 -1"></a-light>
     <a-light type="directional" color="#cce8ff" intensity="0.6"  position="0 -1 2"></a-light>
     <a-light type="point"       color="#fff5e0" intensity="1.2"  position="0 1.5 1" distance="4" decay="2"></a-light>
 
-    <a-camera position="0 0 0" look-controls="enabled: false">
-      <a-entity
-        id="tableEntity"
-        position="0 -0.55 -1.4"
-        rotation="0 0 0"
-        scale="1 1 1"
-        gltf-model=""
-        visible="false">
-      </a-entity>
-    </a-camera>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity id="target1" mindar-image-target="targetIndex: 0">
       <a-entity
@@ -707,25 +656,19 @@
 
   <script>
     /* ══════════════════════════════════════
-       DISH DATA
-    ══════════════════════════════════════ */
+        DISH DATA
+       ══════════════════════════════════════ */
     const dishes = [
-      { name: "almondcrustedcrispy", folder: "almondcrustedcrispy", model: "almondcrustedcrispy.glb",  thumb: "almondcrustedcrispy.png",   scale: "3 3 3",  rotation: "90 90 90" },
-      { name: "cheesyquiche",      folder: "cheesyquiche",      model: "cheesyquiche.glb",      thumb: "cheesyquiche.png",      scale: "3 3 3",  rotation: "90 90 90" },
+      { name: "almondcrustedcrispy", folder: "almondcrustedcrispy", model: "almondcrustedcrispy.glb", thumb: "almondcrustedcrispy.png",   scale: "3 3 3",  rotation: "90 90 90" },
+      { name: "cheesyquiche",      folder: "cheesyquiche",      model: "cheesyquiche.glb",      thumb: "cheesyquiche.png",       scale: "3 3 3",  rotation: "90 90 90" },
       { name: "crispyvegetable", folder: "crispyvegetable", model: "crispyvegetable.glb", thumb: "crispyvegetable.png", scale: "3 3 3",  rotation: "90 90 90" },
       { name: "mangopetaltower", folder: "mangopetaltower", model: "mangopetaltower.glb", thumb: "mangopetaltower.png", scale: "1.3 1.3 1.3",  rotation: "90 90 90" },
     ];
-let currentIndex   = -1;
+    let currentIndex   = -1;
     let arStarted      = false;
     let modelTimeout   = null;
     let swipeHintShown = false;
-    let tableModeOn    = false;
 
-    const tableEntity    = document.querySelector('#tableEntity');
-    const tableBtn       = document.querySelector('#tableBtn');
-    const tableBtnText   = document.querySelector('#tableBtnText');
-    const tableBadge     = document.querySelector('#tableBadge');
-    const tableShadow    = document.querySelector('#tableShadow');
     const modelEntity    = document.querySelector('#modelEntity');
     const dishLabel      = document.querySelector('#dishLabel');
     const dishLabelText  = document.querySelector('#dishLabelText');
@@ -744,15 +687,10 @@ let currentIndex   = -1;
     const swipeFlash     = document.querySelector('#swipeFlash');
     const dishCounter    = document.querySelector('#dishCounter');
 
-    const alwaysVisible = [carousel, logo, dishCounter, tableBtn];
+    const alwaysVisible = [carousel, logo, dishCounter];
     const markerEls     = [dishLabel];
 
-    /* ══════════════════════════════════════
-       FIX 3 — MutationObserver: force playsinline
-       on A-Frame's injected <video> element.
-       iOS Safari REQUIRES playsinline as an HTML
-       attribute (not just CSS) or it goes fullscreen.
-    ══════════════════════════════════════ */
+    /* ── WATCH VIDEO INJECTION ── */
     const videoObserver = new MutationObserver(() => {
       const vid = arScene.querySelector('video');
       if (vid) {
@@ -816,7 +754,6 @@ let currentIndex   = -1;
         });
       });
 
-      /* FIX — model-error handler so spinner doesn't hang forever */
       const onModelLoaded = () => {
         modelLoader.classList.remove('show');
         if (modelTimeout) { clearTimeout(modelTimeout); modelTimeout = null; }
@@ -842,78 +779,9 @@ let currentIndex   = -1;
         .scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
 
       updateCounterDots(index);
-
-      if (tableModeOn) {
-        syncTableEntity(dish);
-      }
     }
 
-    /* ── SYNC TABLE ENTITY (helper) ── */
-    function syncTableEntity(dish) {
-      tableEntity.removeAttribute('gltf-model');
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          tableEntity.setAttribute('gltf-model', `3d-model/${dish.folder}/${dish.model}`);
-          const parts  = dish.scale.split(' ').map(Number);
-          const factor = 0.35;
-          tableEntity.setAttribute('scale', parts.map(v => v * factor).join(' '));
-          tableEntity.setAttribute('rotation', dish.rotation);
-        });
-      });
-
-      /* model-error on tableEntity too */
-      tableEntity.addEventListener('model-error', () => {
-        console.warn('Table entity model failed:', dish.model);
-      }, { once: true });
-    }
-
-    /* ══════════════════════════════════════
-       SEE ON TABLE
-    ══════════════════════════════════════ */
-    function setTableMode(on) {
-      tableModeOn = on;
-
-      if (on) {
-        const dish = dishes[currentIndex];
-        tableEntity.setAttribute('visible', 'true');
-        syncTableEntity(dish);
-
-        modelEntity.setAttribute('visible', 'false');
-
-        tableBtn.classList.add('table-active');
-        tableBtnText.textContent = 'Back to Card';
-        tableBadge.classList.add('visible');
-        tableShadow.classList.add('visible');
-        dishLabel.style.opacity = '0';
-        dishLabel.style.pointerEvents = 'none';
-        scanHint.style.opacity = '0';
-
-      } else {
-        tableEntity.setAttribute('visible', 'false');
-        tableEntity.removeAttribute('gltf-model');
-        modelEntity.setAttribute('visible', 'true');
-
-        tableBtn.classList.remove('table-active');
-        tableBtnText.textContent = 'See on Table';
-        tableBadge.classList.remove('visible');
-        tableShadow.classList.remove('visible');
-        scanHint.style.opacity = '1';
-      }
-    }
-
-    /*
-      FIX 4 — Only bind 'click' on tableBtn.
-      touch-action:manipulation already removes the 300ms delay,
-      so binding both click + touchend causes double-toggle on Android.
-    */
-    tableBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      setTableMode(!tableModeOn);
-    });
-
-    /* ══════════════════════════════════════
-       SWIPE GESTURE HANDLER
-    ══════════════════════════════════════ */
+    /* ── SWIPE GESTURE HANDLER ── */
     let touchStartX    = 0;
     let touchStartY    = 0;
     let touchStartTime = 0;
@@ -921,7 +789,7 @@ let currentIndex   = -1;
 
     const SWIPE_MIN_X    = 50;
     const SWIPE_MAX_Y    = 80;
-    const SWIPE_MAX_MS   = 500;
+    const SWIPE_MAX_MS    = 500;
     const SWIPE_DEBOUNCE = 300;
 
     swipeZone.addEventListener('touchstart', (e) => {
@@ -976,9 +844,7 @@ let currentIndex   = -1;
       }, 1200);
     }
 
-    /* ══════════════════════════════════════
-       START AR
-    ══════════════════════════════════════ */
+    /* ── START AR ── */
     async function startAR() {
       if (arStarted) return;
 
@@ -988,14 +854,6 @@ let currentIndex   = -1;
       loadingStatus.textContent = 'Starting camera';
 
       try {
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-        /*
-          FIX 2 — Use 'ideal' (not 'exact') for both platforms.
-          'exact' throws OverconstrainedError on iOS if the browser
-          has a camera conflict. Since we stop this stream immediately
-          after the permission check, 'ideal' is sufficient everywhere.
-        */
         const stream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: { ideal: 'environment' } },
           audio: false
@@ -1004,10 +862,6 @@ let currentIndex   = -1;
 
         loadingStatus.textContent = 'Initialising AR';
 
-        /*
-          FIX 1 — Reveal a-scene with visibility/opacity instead of display.
-          This keeps the WebGL context alive (required by iOS Safari).
-        */
         arScene.style.visibility  = 'visible';
         arScene.style.opacity     = '1';
         arScene.style.pointerEvents = 'auto';
@@ -1040,10 +894,6 @@ let currentIndex   = -1;
         arScene.addEventListener('loaded',   onReady, { once: true });
         arScene.addEventListener('arReady',  onReady, { once: true });
 
-        /*
-          Fallback timer — increased to 8 s for slow Android devices,
-          and gated by readyFired so it can't double-fire.
-        */
         setTimeout(onReady, 8000);
 
       } catch (err) {
@@ -1054,11 +904,6 @@ let currentIndex   = -1;
     }
 
     /* ── BUTTON HANDLERS ── */
-    /*
-      FIX 4 (applied here too) — only 'click' on startBtn and retryBtn.
-      touch-action:manipulation removes the 300ms delay;
-      binding both click + touchend double-fires on Android Chrome.
-    */
     document.querySelector('#startBtn').addEventListener('click', (e) => {
       e.preventDefault();
       startAR();
@@ -1073,7 +918,6 @@ let currentIndex   = -1;
 
     /* ── AR TARGET EVENTS ── */
     target.addEventListener('targetFound', () => {
-      if (tableModeOn) return; // don't fight table mode
       markerEls.forEach(el => {
         el.style.opacity = '1';
         el.style.pointerEvents = 'auto';
@@ -1082,7 +926,6 @@ let currentIndex   = -1;
     });
 
     target.addEventListener('targetLost', () => {
-      if (tableModeOn) return;
       markerEls.forEach(el => {
         el.style.opacity = '0';
         el.style.pointerEvents = 'none';
@@ -1094,4 +937,3 @@ let currentIndex   = -1;
   </script>
 </body>
 </html>
-    
