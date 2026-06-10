@@ -195,9 +195,7 @@
     loading-screen="enabled: false" vr-mode-ui="enabled: false" xr-mode-ui="enabled: false"
     style="visibility:hidden; opacity:0; pointer-events:none;">
 
-    <a-assets timeout="30000">
-      <img id="localSmokeTexture" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" crossorigin="anonymous">
-    </a-assets>
+    <a-assets timeout="30000"></a-assets>
 
     <a-light type="ambient" color="#ffffff" intensity="1.6"></a-light>
     <a-light type="directional" color="#ffffff" intensity="1.4" position="1 3 2"></a-light>
@@ -221,19 +219,6 @@
           gltf-model="">
         </a-entity>
 
-        <a-entity id="native3DSteam" position="0 0 0.05" rotation="90 0 0" visible="false">
-          <a-plane position="0 0.05 0" width="0.35" height="0.55" 
-                   material="shader: flat; color: #ffffff; transparent: true; opacity: 0.15;"
-                   animation="property: position; to: 0 0.35 0; dur: 3000; easing: linear; loop: true"
-                   animation__fade="property: material.opacity; from: 0.15; to: 0; dur: 3000; easing: linear; loop: true">
-          </a-plane>
-          <a-plane position="0.04 0.02 0" width="0.25" height="0.45" 
-                   material="shader: flat; color: #f5f0e8; transparent: true; opacity: 0.1;"
-                   animation="property: position; to: -0.04 0.3 0; dur: 3800; easing: linear; loop: true"
-                   animation__fade="property: material.opacity; from: 0.1; to: 0; dur: 3800; easing: linear; loop: true">
-          </a-plane>
-        </a-entity>
-
       </a-entity>
     </a-entity>
   </a-scene>
@@ -249,7 +234,6 @@
     let arStarted = false;
 
     const modelEntity   = document.querySelector('#modelEntity');
-    const native3DSteam = document.querySelector('#native3DSteam');
     const dishLabel     = document.querySelector('#dishLabel');
     const dishLabelText = document.querySelector('#dishLabelText');
     const carousel      = document.querySelector('#dishCarousel');
@@ -311,11 +295,9 @@
       loadingOverlay.classList.add('show');
 
       try {
-        // Request permissions safely first
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
         stream.getTracks().forEach(t => t.stop());
 
-        // Instantly switch view configurations to allow render pipelines to run
         arScene.style.visibility = 'visible'; 
         arScene.style.opacity = '1'; 
         arScene.style.pointerEvents = 'auto';
@@ -335,11 +317,9 @@
           selectDish(0);
         };
 
-        // FIX: Listen to both structural frame load events to break hangs instantly
         arScene.addEventListener('loaded', onReady, { once: true });
         arScene.addEventListener('arReady', onReady, { once: true });
         
-        // Safety Fallback Trigger: Force scene to load in 5 seconds max if context stalls
         setTimeout(onReady, 5000);
 
       } catch (err) {
@@ -358,13 +338,11 @@
     target.addEventListener('targetFound', () => {
       dishLabel.style.opacity = '1';
       scanHint.style.opacity = '0';
-      native3DSteam.setAttribute('visible', 'true');
     });
 
     target.addEventListener('targetLost', () => {
       dishLabel.style.opacity = '0';
       scanHint.style.opacity = '1';
-      native3DSteam.setAttribute('visible', 'false');
     });
   </script>
 </body>
