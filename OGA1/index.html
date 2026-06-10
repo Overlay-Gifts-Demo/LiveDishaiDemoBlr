@@ -222,19 +222,16 @@
         </a-entity>
 
         <a-entity id="native3DSteam" position="0 0 0.05" rotation="90 0 0" visible="false">
-          
           <a-plane position="0 0.05 0" width="0.35" height="0.55" 
-                   material="shader: flat; color: #ffffff; transparent: true; opacity: 0.15; bresenham: true;"
+                   material="shader: flat; color: #ffffff; transparent: true; opacity: 0.15;"
                    animation="property: position; to: 0 0.35 0; dur: 3000; easing: linear; loop: true"
                    animation__fade="property: material.opacity; from: 0.15; to: 0; dur: 3000; easing: linear; loop: true">
           </a-plane>
-
           <a-plane position="0.04 0.02 0" width="0.25" height="0.45" 
-                   material="shader: flat; color: #f5f0e8; transparent: true; opacity: 0.1; bresenham: true;"
+                   material="shader: flat; color: #f5f0e8; transparent: true; opacity: 0.1;"
                    animation="property: position; to: -0.04 0.3 0; dur: 3800; easing: linear; loop: true"
                    animation__fade="property: material.opacity; from: 0.1; to: 0; dur: 3800; easing: linear; loop: true">
           </a-plane>
-
         </a-entity>
 
       </a-entity>
@@ -264,6 +261,17 @@
     const startScreen   = document.querySelector('#startScreen');
     const loadingOverlay= document.querySelector('#loadingOverlay');
     const swipeZone     = document.querySelector('#swipeZone');
+
+    /* ── VIDEO LAYER OBSERVER ── */
+    const videoObserver = new MutationObserver(() => {
+      const vid = arScene.querySelector('video');
+      if (vid) {
+        vid.setAttribute('playsinline', ''); vid.setAttribute('webkit-playsinline', '');
+        vid.setAttribute('muted', ''); vid.muted = true;
+        videoObserver.disconnect();
+      }
+    });
+    videoObserver.observe(arScene, { childList: true, subtree: true });
 
     /* ── POPULATE INTERFACE ── */
     dishes.forEach((dish, i) => {
@@ -298,26 +306,45 @@
     /* ── AR CONTROLLERS ── */
     async function startAR() {
       if (arStarted) return;
-      startScreen.style.opacity = '0'; setTimeout(() => { startScreen.style.display = 'none'; }, 400);
+      startScreen.style.opacity = '0'; 
+      setTimeout(() => { startScreen.style.display = 'none'; }, 400);
       loadingOverlay.classList.add('show');
 
       try {
+        // Request permissions safely first
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
         stream.getTracks().forEach(t => t.stop());
 
-        arScene.style.visibility = 'visible'; arScene.style.opacity = '1'; arScene.style.pointerEvents = 'auto';
+        // Instantly switch view configurations to allow render pipelines to run
+        arScene.style.visibility = 'visible'; 
+        arScene.style.opacity = '1'; 
+        arScene.style.pointerEvents = 'auto';
+
+        let readyFired = false;
 
         const onReady = () => {
-          loadingOverlay.classList.remove('show'); scanHint.style.opacity = '1';
-          arStarted = true; swipeZone.classList.add('active');
+          if (readyFired) return;
+          readyFired = true;
+          
+          loadingOverlay.classList.remove('show'); 
+          scanHint.style.opacity = '1';
+          arStarted = true; 
+          swipeZone.classList.add('active');
           [carousel, logo, dishLabel].forEach(el => el.style.opacity = '1');
           marketingCTA.classList.add('visible');
           selectDish(0);
         };
 
+        // FIX: Listen to both structural frame load events to break hangs instantly
+        arScene.addEventListener('loaded', onReady, { once: true });
         arScene.addEventListener('arReady', onReady, { once: true });
+        
+        // Safety Fallback Trigger: Force scene to load in 5 seconds max if context stalls
+        setTimeout(onReady, 5000);
+
       } catch (err) {
         console.error(err);
+        loadingOverlay.classList.remove('show');
       }
     }
 
