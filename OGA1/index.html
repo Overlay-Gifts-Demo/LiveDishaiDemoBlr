@@ -14,7 +14,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
 
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *, *::before, *::after { 
+      box-sizing: border-box; 
+      margin: 0; 
+      padding: 0; 
+      /* 🔒 Bulletproof Mobile Copy/Long-press Protection for both Android & iOS */
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
 
     :root {
       --gold: #C9A84C;
@@ -164,6 +172,7 @@
 </head>
 <body>
 
+  <!-- ── START SCREEN ── -->
   <div id="startScreen">
     <div class="start-inner">
       <p class="start-eyebrow">A Taste of augmented reality</p>
@@ -178,6 +187,7 @@
     </div>
   </div>
 
+  <!-- ── LOADING ── -->
   <div id="loadingOverlay">
     <div class="loading-ring">
       <svg viewBox="0 0 50 50" width="50" height="50" fill="none">
@@ -188,6 +198,7 @@
     <p id="loadingStatus">Preparing Culinary Display</p>
   </div>
 
+  <!-- ── INTERACTIVE OVERLAYS ── -->
   <img src="logo1.png" id="logo" alt="Logo">
   <div id="dishLabel"><span class="label-dot"></span><span id="dishLabelText">...</span></div>
   
