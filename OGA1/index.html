@@ -1,1 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta http-equiv="Permissions-Policy" content="camera=*">
+  <title>The Sensory Menu Experience</title>
 
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #C9A84C;
+      --gold-light: #E8C97A;
+      --gold-dim: rgba(201,168,76,0.15);
+      --gold-border: rgba(201,168,76,0.25);
+      --ink: #0A0A0A;
+      --cream: #F5F0E8;
+      --glass-dark: rgba(6,5,4,0.8);
+      --radius: 12px;
+      --radius-pill: 100px;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      font-family: 'Jost', sans-serif;
+      background: #060504;
+      overflow: hidden;
+      overscroll-behavior: none;
+      position: fixed;
+    }
+
+    .a-enter-vr-button { display: none !important; }
+
+    a-scene {
+      position: fixed !important; inset: 0 !important;
+      width: 100% !important; height: 100% !important; z-index: 0 !important;
+    }
+    canvas.a-canvas {
+      width: 100% !important; height: 100% !important; position: fixed !important; inset: 0 !important;
+    }
+    video {
+      position: fixed !important; inset: 0 !important;
+      width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important;
+    }
+
+    /* ── START SCREEN ── */
+    #startScreen {
+      position: fixed; inset: 0; background: #060504;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 999; padding: 40px 32px; transition: opacity 0.4s ease;
+    }
+    #startScreen::before, #startScreen::after {
+      content: ''; position: absolute; width: 60px; height: 60px; border-color: var(--gold-border); border-style: solid;
+    }
+    #startScreen::before { top: 24px; left: 24px; border-width: 1px 0 0 1px; }
+    #startScreen::after  { bottom: 24px; right: 24px; border-width: 0 1px 1px 0; }
+
+    .start-inner { display: flex; flex-direction: column; align-items: center; max-width: 320px; width: 100%; }
+    
+    .start-ornament { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .start-ornament-line { width: 40px; height: 1px; background: linear-gradient(90deg, transparent, var(--gold)); }
+    .start-ornament-line.right { background: linear-gradient(90deg, var(--gold), transparent); }
+    .start-ornament-diamond { width: 6px; height: 6px; background: var(--gold); transform: rotate(45deg); }
+
+    #startScreen h1 {
+      font-family: 'Cormorant Garamond', serif; color: var(--cream);
+      font-size: 36px; font-weight: 300; letter-spacing: 0.01em; line-height: 1.2;
+      text-align: center; margin-bottom: 20px;
+    }
+    #startScreen h1 em { font-style: italic; color: var(--gold-light); }
+    #startScreen p {
+      color: rgba(245,240,232,0.45); font-size: 13px; text-align: center; line-height: 1.7;
+      margin-bottom: 36px; letter-spacing: 0.02em;
+    }
+    
+    #startBtn {
+      position: relative; padding: 16px 42px; font-family: 'Jost', sans-serif;
+      font-size: 11px; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase;
+      border: 1px solid var(--gold-border); border-radius: var(--radius-pill);
+      background: transparent; color: var(--gold-light); cursor: pointer;
+    }
+
+    /* ── LOADING ── */
+    #loadingOverlay {
+      position: fixed; inset: 0; background: #060504;
+      display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 998; gap: 20px;
+    }
+    #loadingOverlay.show { display: flex; }
+    .loading-ring { position: relative; width: 50px; height: 50px; }
+    .loading-ring svg { animation: spin-slow 2s linear infinite; }
+    #loadingStatus { color: rgba(245,240,232,0.4); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; }
+
+    @keyframes spin-slow { to { transform: rotate(360deg); } }
+
+    /* ── HUD LABELS & CAROUSEL ── */
+    #logo {
+      position: fixed; top: 16px; left: 16px; width: 68px; z-index: 200; opacity: 0;
+      filter: brightness(0) invert(1) sepia(1) saturate(0.5); transition: opacity 0.5s;
+    }
+
+    #dishLabel {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      background: var(--glass-dark); border: 1px solid var(--gold-border); border-radius: var(--radius-pill);
+      padding: 9px 24px; font-family: 'Cormorant Garamond', serif; font-size: 16px;
+      color: var(--gold-light); letter-spacing: 0.05em; z-index: 200; opacity: 0; transition: opacity 0.5s;
+    }
+
+    /* ── DUAL-ACTION MARKETING HUB ── */
+    #marketingHub {
+      position: fixed; bottom: 125px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 210; opacity: 0; pointer-events: none;
+      transition: opacity 0.5s, transform 0.2s; width: calc(100vw - 32px); max-width: 340px;
+    }
+    #marketingHub.visible { opacity: 1; pointer-events: auto; }
+
+    .hub-btn {
+      flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+      padding: 14px 12px; border-radius: var(--radius); font-family: 'Jost', sans-serif;
+      font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+      border: none; cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.1s ease;
+    }
+    .hub-btn:active { transform: scale(0.96); }
+    .hub-btn svg { width: 14px; height: 14px; fill: currentColor; }
+
+    #btnBook { background: var(--gold); color: var(--ink); box-shadow: 0 6px 20px rgba(201,168,76,0.2); }
+    #btnMaps { background: var(--glass-dark); color: var(--cream); border: 1px solid var(--gold-border); backdrop-filter: blur(10px); }
+
+    #dishCarousel {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; overflow-x: auto; max-width: calc(100vw - 24px);
+      padding: 8px 16px; background: var(--glass-dark); backdrop-filter: blur(20px);
+      border: 1px solid var(--gold-border); border-radius: 60px; z-index: 150; opacity: 0; transition: opacity 0.5s;
+    }
+    #dishCarousel::-webkit-scrollbar { display: none; }
+
+    .dish-thumb { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; flex-shrink: 0; padding: 4px 8px; border-radius: 40px; }
+    .dish-thumb img { width: 46px; height: 46px; object-fit: cover; border-radius: 50%; border: 1.5px solid rgba(201,168,76,0.1); }
+    .dish-thumb.active { background: var(--gold-dim); }
+    .dish-thumb.active img { border-color: var(--gold); transform: scale(1.05); }
+    .dish-thumb span { font-size: 8px; letter-spacing: 0.04em; color: rgba(245,240,232,0.4); text-transform: uppercase; }
+    .dish-thumb.active span { color: var(--gold); font-weight: 500; }
+
+    #swipeZone { position: fixed; inset: 0; z-index: 100; pointer-events: none; }
+    #swipeZone.active { pointer-events: auto; }
+    #scanHint {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 10; opacity: 0; transition: opacity 0.5s;
+    }
+    #scanHint p { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: rgba(245,240,232,0.4); }
+
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      #dishCarousel { bottom: calc(22px + env(safe-area-inset-bottom)); }
+      #marketingHub { bottom: calc(125px + env(safe-area-inset-bottom)); }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="startScreen">
+    <div class="start-inner">
+      <p class="start-eyebrow">A Taste of augmented reality</p>
+      <div class="start-ornament">
+        <div class="start-ornament-line"></div>
+        <div class="start-ornament-diamond"></div>
+        <div class="start-ornament-line right"></div>
+      </div>
+      <h1>Experience Our<br><em>Signature Creations</em></h1>
+      <p>Scan the postcard portrait to watch dishes materialize in vivid, sensory 3D right before your eyes.</p>
+      <button id="startBtn">View Live Menu</button>
+    </div>
+  </div>
+
+  <div id="loadingOverlay">
+    <div class="loading-ring">
+      <svg viewBox="0 0 50 50" width="50" height="50" fill="none">
+        <circle cx="25" cy="25" r="22" stroke="rgba(201,168,76,0.1)" stroke-width="1"/>
+        <path d="M25 3 A22 22 0 0 1 47 25" stroke="#C9A84C" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p id="loadingStatus">Preparing Culinary Display</p>
+  </div>
+
+  <img src="logo1.png" id="logo" alt="Logo">
+  <div id="dishLabel"><span class="label-dot"></span><span id="dishLabelText">...</span></div>
+  
+  <div id="marketingHub">
+    <button class="hub-btn" id="btnBook">
+      <svg viewBox="0 0 24 24"><path d="M6.62 10.79a15.15 15.15 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.11-.27 11.72 11.72 0 0 0 3.65.58 1 1 0 0 1 1 1v3.5a1 1 0 0 1-1 1A16 16 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.72 11.72 0 0 0 .58 3.65 1 1 0 0 1-.27 1.11z"/></svg>
+      Book Table
+    </button>
+    <button class="hub-btn" id="btnMaps">
+      <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+      Directions
+    </button>
+  </div>
+
+  <div id="swipeZone"></div>
+  <div id="dishCarousel"></div>
+
+  <div id="scanHint">
+    <p>Center the card in view</p>
+  </div>
+
+  <a-scene
+    id="arScene"
+    mindar-image="imageTargetSrc: ./targets/card.mind; maxTrack: 1; filterMinCF: 0.05; filterBeta: 8; uiLoading: no; uiError: no; uiScanning: no"
+    renderer="colorManagement: true; antialias: true; precision: mediump; physicallyCorrectLights: true"
+    loading-screen="enabled: false" vr-mode-ui="enabled: false" xr-mode-ui="enabled: false"
+    style="visibility:hidden; opacity:0; pointer-events:none;">
+
+    <a-assets timeout="30000"></a-assets>
+
+    <a-light type="ambient" color="#ffffff" intensity="1.6"></a-light>
+    <a-light type="directional" color="#ffffff" intensity="1.4" position="1 3 2"></a-light>
+    <a-light type="directional" color="#ffe9c0" intensity="0.8" position="-2 2 -1"></a-light>
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <a-entity id="target1" mindar-image-target="targetIndex: 0">
+      <a-entity 
+        id="rotationWrapper" 
+        position="0 0 0" 
+        rotation="0 0 0"
+        animation="property: rotation; to: 0 0 360; dur: 14000; easing: linear; loop: true">
+        <a-entity 
+          id="modelEntity" 
+          position="0 0 0" 
+          rotation="90 90 90" 
+          scale="1 1 1" 
+          gltf-model="">
+        </a-entity>
+      </a-entity>
+    </a-entity>
+  </a-scene>
+
+  <script>
+    const dishes = [
+      { name: "Almond Crusted Crispy", folder: "almondcrustedcrispy", model: "almondcrustedcrispy.glb", thumb: "almondcrustedcrispy.png", scale: "3 3 3", rotation: "90 90 90" },
+      { name: "Cheesy Quiche", folder: "cheesyquiche", model: "cheesyquiche.glb", thumb: "cheesyquiche.png", scale: "3 3 3", rotation: "90 90 90" },
+      { name: "Crispy Vegetable", folder: "crispyvegetable", model: "crispyvegetable.glb", thumb: "crispyvegetable.png", scale: "3 3 3", rotation: "90 90 90" },
+      { name: "Mango Petal Tower", folder: "mangopetaltower", model: "mangopetaltower.glb", thumb: "mangopetaltower.png", scale: "1.3 1.3 1.3", rotation: "90 90 90" },
+    ];
+    let currentIndex = -1;
+    let arStarted = false;
+
+    const modelEntity   = document.querySelector('#modelEntity');
+    const dishLabel     = document.querySelector('#dishLabel');
+    const dishLabelText = document.querySelector('#dishLabelText');
+    const carousel      = document.querySelector('#dishCarousel');
+    const marketingHub  = document.querySelector('#marketingHub');
+    const logo          = document.querySelector('#logo');
+    const scanHint      = document.querySelector('#scanHint');
+    const target        = document.querySelector('#target1');
+    const arScene       = document.querySelector('#arScene');
+    const startScreen   = document.querySelector('#startScreen');
+    const loadingOverlay= document.querySelector('#loadingOverlay');
+    const swipeZone     = document.querySelector('#swipeZone');
+
+    /* ── VIDEO LAYER OBSERVER ── */
+    const videoObserver = new MutationObserver(() => {
+      const vid = arScene.querySelector('video');
+      if (vid) {
+        vid.setAttribute('playsinline', ''); vid.setAttribute('webkit-playsinline', '');
+        vid.setAttribute('muted', ''); vid.muted = true;
+        videoObserver.disconnect();
+      }
+    });
+    videoObserver.observe(arScene, { childList: true, subtree: true });
+
+    /* ── POPULATE INTERFACE ── */
+    dishes.forEach((dish, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'dish-thumb' + (i === 0 ? ' active' : '');
+      thumb.innerHTML = `
+        <img src="3d-model/${dish.folder}/${dish.thumb}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2246%22 height=%2246%22%3E%3Crect width=%2246%22 height=%2246%22 rx=%2223%22 fill=%22%231a1510%22/%3E%3C/svg%3E'">
+        <span>${dish.name.split(' ')[0]}</span>
+      `;
+      thumb.addEventListener('click', () => selectDish(i));
+      carousel.appendChild(thumb);
+    });
+
+    function selectDish(index) {
+      if (index === currentIndex) return;
+      currentIndex = index;
+      const dish = dishes[index];
+
+      modelEntity.removeAttribute('gltf-model');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          modelEntity.setAttribute('gltf-model', `3d-model/${dish.folder}/${dish.model}`);
+          modelEntity.setAttribute('scale', dish.scale);
+          modelEntity.setAttribute('rotation', dish.rotation);
+        });
+      });
+
+      dishLabelText.textContent = dish.name;
+      document.querySelectorAll('.dish-thumb').forEach((el, i) => { el.classList.toggle('active', i === index); });
+    }
+
+    /* ── AR CONTROLLERS ── */
+    async function startAR() {
+      if (arStarted) return;
+      startScreen.style.opacity = '0'; 
+      setTimeout(() => { startScreen.style.display = 'none'; }, 400);
+      loadingOverlay.classList.add('show');
+
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+        stream.getTracks().forEach(t => t.stop());
+
+        arScene.style.visibility = 'visible'; 
+        arScene.style.opacity = '1'; 
+        arScene.style.pointerEvents = 'auto';
+
+        let readyFired = false;
+
+        const onReady = () => {
+          if (readyFired) return;
+          readyFired = true;
+          
+          loadingOverlay.classList.remove('show'); 
+          scanHint.style.opacity = '1';
+          arStarted = true; 
+          swipeZone.classList.add('active');
+          [carousel, logo, dishLabel].forEach(el => el.style.opacity = '1');
+          marketingHub.classList.add('visible');
+          selectDish(0);
+        };
+
+        arScene.addEventListener('loaded', onReady, { once: true });
+        arScene.addEventListener('arReady', onReady, { once: true });
+        
+        setTimeout(onReady, 5000);
+
+      } catch (err) {
+        console.error(err);
+        loadingOverlay.classList.remove('show');
+      }
+    }
+
+    document.querySelector('#startBtn').addEventListener('click', startAR);
+    
+    // 📞 1. CHANGE RESERVATION PHONE NUMBER HERE
+    document.querySelector('#btnBook').addEventListener('click', () => {
+      window.location.href = 'tel:+919999999999';
+    });
+
+    // 📍 2. CHANGE GOOGLE MAPS NAVIGATION LOCATION LINK HERE
+    document.querySelector('#btnMaps').addEventListener('click', () => {
+      window.location.href = 'https://maps.google.com/?q=Your+Restaurant+Name+Bangalore';
+    });
+
+    /* ── TARGET DISCOVERY TRIGGERS ── */
+    target.addEventListener('targetFound', () => {
+      dishLabel.style.opacity = '1';
+      scanHint.style.opacity = '0';
+    });
+
+    target.addEventListener('targetLost', () => {
+      dishLabel.style.opacity = '0';
+      scanHint.style.opacity = '1';
+    });
+  </script>
+</body>
+</html>
