@@ -50,18 +50,6 @@
       width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important;
     }
 
-    /* ── PROCEDURAL AMBIENCE OVERLAY ── */
-    #ambientCravingEffect {
-      position: fixed;
-      bottom: 0; left: 0; right: 0; height: 40vh;
-      background: linear-gradient(to top, rgba(6,5,4,0.85) 0%, rgba(201,168,76,0.08) 50%, transparent 100%);
-      pointer-events: none;
-      z-index: 40;
-      opacity: 0;
-      transition: opacity 0.8s ease;
-    }
-    #ambientCravingEffect.active { opacity: 1; }
-
     /* ── START SCREEN ── */
     #startScreen {
       position: fixed; inset: 0; background: #060504;
@@ -166,10 +154,6 @@
 </head>
 <body>
 
-  <!-- 🔥 PROCEDURAL AMBIENT CRAVING GLOW SHIELD (100% Local, No External Asset Dependencies) -->
-  <div id="ambientCravingEffect"></div>
-
-  <!-- ── START SCREEN ── -->
   <div id="startScreen">
     <div class="start-inner">
       <p class="start-eyebrow">A Taste of augmented reality</p>
@@ -184,7 +168,6 @@
     </div>
   </div>
 
-  <!-- ── LOADING ── -->
   <div id="loadingOverlay">
     <div class="loading-ring">
       <svg viewBox="0 0 50 50" width="50" height="50" fill="none">
@@ -195,7 +178,6 @@
     <p id="loadingStatus">Preparing Culinary Display</p>
   </div>
 
-  <!-- ── INTERACTIVE OVERLAYS ── -->
   <img src="logo1.png" id="logo" alt="Logo">
   <div id="dishLabel"><span class="label-dot"></span><span id="dishLabelText">...</span></div>
   <button id="marketingCTA">Reserve a Table</button>
@@ -206,13 +188,16 @@
     <p>Center the card in view</p>
   </div>
 
-  <!-- ── AR PLATFORM ── -->
   <a-scene
     id="arScene"
     mindar-image="imageTargetSrc: ./targets/card.mind; maxTrack: 1; filterMinCF: 0.05; filterBeta: 8; uiLoading: no; uiError: no; uiScanning: no"
     renderer="colorManagement: true; antialias: true; precision: mediump; physicallyCorrectLights: true"
     loading-screen="enabled: false" vr-mode-ui="enabled: false" xr-mode-ui="enabled: false"
     style="visibility:hidden; opacity:0; pointer-events:none;">
+
+    <a-assets timeout="30000">
+      <img id="localSmokeTexture" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" crossorigin="anonymous">
+    </a-assets>
 
     <a-light type="ambient" color="#ffffff" intensity="1.6"></a-light>
     <a-light type="directional" color="#ffffff" intensity="1.4" position="1 3 2"></a-light>
@@ -222,20 +207,34 @@
 
     <a-entity id="target1" mindar-image-target="targetIndex: 0">
       
-      <!-- 🔄 WRAPPER CONTAINER: Perfectly isolated axial center-line table spinning -->
       <a-entity 
         id="rotationWrapper" 
         position="0 0 0" 
         rotation="0 0 0"
         animation="property: rotation; to: 0 0 360; dur: 14000; easing: linear; loop: true">
         
-        <!-- THE DISH MODEL: Anchored natively at horizontal plate space configurations -->
         <a-entity 
           id="modelEntity" 
           position="0 0 0" 
           rotation="90 90 90" 
           scale="1 1 1" 
           gltf-model="">
+        </a-entity>
+
+        <a-entity id="native3DSteam" position="0 0 0.05" rotation="90 0 0" visible="false">
+          
+          <a-plane position="0 0.05 0" width="0.35" height="0.55" 
+                   material="shader: flat; color: #ffffff; transparent: true; opacity: 0.15; bresenham: true;"
+                   animation="property: position; to: 0 0.35 0; dur: 3000; easing: linear; loop: true"
+                   animation__fade="property: material.opacity; from: 0.15; to: 0; dur: 3000; easing: linear; loop: true">
+          </a-plane>
+
+          <a-plane position="0.04 0.02 0" width="0.25" height="0.45" 
+                   material="shader: flat; color: #f5f0e8; transparent: true; opacity: 0.1; bresenham: true;"
+                   animation="property: position; to: -0.04 0.3 0; dur: 3800; easing: linear; loop: true"
+                   animation__fade="property: material.opacity; from: 0.1; to: 0; dur: 3800; easing: linear; loop: true">
+          </a-plane>
+
         </a-entity>
 
       </a-entity>
@@ -253,6 +252,7 @@
     let arStarted = false;
 
     const modelEntity   = document.querySelector('#modelEntity');
+    const native3DSteam = document.querySelector('#native3DSteam');
     const dishLabel     = document.querySelector('#dishLabel');
     const dishLabelText = document.querySelector('#dishLabelText');
     const carousel      = document.querySelector('#dishCarousel');
@@ -264,18 +264,6 @@
     const startScreen   = document.querySelector('#startScreen');
     const loadingOverlay= document.querySelector('#loadingOverlay');
     const swipeZone     = document.querySelector('#swipeZone');
-    const ambientGlow   = document.querySelector('#ambientCravingEffect');
-
-    /* ── VIDEO LAYER OBSERVER ── */
-    const videoObserver = new MutationObserver(() => {
-      const vid = arScene.querySelector('video');
-      if (vid) {
-        vid.setAttribute('playsinline', ''); vid.setAttribute('webkit-playsinline', '');
-        vid.setAttribute('muted', ''); vid.muted = true;
-        videoObserver.disconnect();
-      }
-    });
-    videoObserver.observe(arScene, { childList: true, subtree: true });
 
     /* ── POPULATE INTERFACE ── */
     dishes.forEach((dish, i) => {
@@ -343,13 +331,13 @@
     target.addEventListener('targetFound', () => {
       dishLabel.style.opacity = '1';
       scanHint.style.opacity = '0';
-      ambientGlow.classList.add('active'); // Smooth ambient vignette activation
+      native3DSteam.setAttribute('visible', 'true');
     });
 
     target.addEventListener('targetLost', () => {
       dishLabel.style.opacity = '0';
       scanHint.style.opacity = '1';
-      ambientGlow.classList.remove('active');
+      native3DSteam.setAttribute('visible', 'false');
     });
   </script>
 </body>
